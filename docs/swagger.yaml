@@ -1,0 +1,175 @@
+definitions:
+  ds.Product:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: integer
+      uuid:
+        type: string
+    type: object
+  models.ModelError:
+    properties:
+      description:
+        description: description
+        type: string
+      error:
+        description: error
+        type: string
+      type:
+        description: type
+        type: string
+    type: object
+  models.ModelPriceUpdate:
+    properties:
+      price:
+        type: string
+    type: object
+  models.ModelProductCreated:
+    properties:
+      success:
+        description: success
+        type: boolean
+    type: object
+  models.ModelProductData:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      price:
+        type: string
+    type: object
+  models.ModelProductDeleted:
+    properties:
+      delete:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/products:
+    get:
+      description: Get a list of all products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ds.Product'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ModelError'
+      summary: Get all records
+      tags:
+      - Info
+  /api/products/create:
+    post:
+      description: Adding a new product to database
+      parameters:
+      - description: Цена
+        in: query
+        name: Price
+        required: true
+        type: integer
+      - description: Название
+        in: query
+        name: Name
+        required: true
+        type: string
+      - description: Описание продукта
+        in: query
+        name: Description
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.ModelProductCreated'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ModelError'
+      summary: Add a new product
+      tags:
+      - Add
+  /api/products/item:
+    delete:
+      description: Delete a product via its uuid
+      parameters:
+      - description: UUID product
+        in: query
+        name: UUID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ModelProductDeleted'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ModelError'
+      summary: Delete a product
+      tags:
+      - Change
+    get:
+      description: Get name, description, price for a product via uuid
+      parameters:
+      - description: UUID product
+        in: query
+        name: UUID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ModelProductData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ModelError'
+      summary: Get information for a product
+      tags:
+      - Info
+    put:
+      description: Update a price for a product via its uuid
+      parameters:
+      - description: UUID product
+        in: query
+        name: UUID
+        required: true
+        type: string
+      - description: New price
+        in: query
+        name: Price
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ModelPriceUpdate'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ModelError'
+      summary: Update product price
+      tags:
+      - Update
+swagger: "2.0"

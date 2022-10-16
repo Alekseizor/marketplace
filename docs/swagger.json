@@ -1,0 +1,266 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/products": {
+            "get": {
+                "description": "Get a list of all products",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Info"
+                ],
+                "summary": "Get all records",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ds.Product"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products/create": {
+            "post": {
+                "description": "Adding a new product to database",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Add"
+                ],
+                "summary": "Add a new product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Цена",
+                        "name": "Price",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Название",
+                        "name": "Name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Описание продукта",
+                        "name": "Description",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelProductCreated"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/products/item": {
+            "get": {
+                "description": "Get name, description, price for a product via uuid",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Info"
+                ],
+                "summary": "Get information for a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID product",
+                        "name": "UUID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelProductData"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update a price for a product via its uuid",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Update"
+                ],
+                "summary": "Update product price",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID product",
+                        "name": "UUID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "New price",
+                        "name": "Price",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelPriceUpdate"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a product via its uuid",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Change"
+                ],
+                "summary": "Delete a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID product",
+                        "name": "UUID",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelProductDeleted"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ModelError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "ds.Product": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "integer"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ModelError": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "description",
+                    "type": "string"
+                },
+                "error": {
+                    "description": "error",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "type",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ModelPriceUpdate": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ModelProductCreated": {
+            "type": "object",
+            "properties": {
+                "success": {
+                    "description": "success",
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.ModelProductData": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ModelProductDeleted": {
+            "type": "object",
+            "properties": {
+                "delete": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
