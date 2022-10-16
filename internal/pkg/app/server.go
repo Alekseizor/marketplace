@@ -30,9 +30,9 @@ func (a *Application) StartServer() {
 		{
 			products.POST("/create", a.CreateItem)
 			products.GET("/", a.GetAllItems)
-			products.GET("/item", a.GetItemById)
-			products.PUT("/item", a.UpdateItem)
-			products.DELETE("/item", a.DeleteItem)
+			products.GET("/item/:uuid", a.GetItemById)
+			products.PUT("/item/:uuid", a.UpdateItem)
+			products.DELETE("/item/:uuid", a.DeleteItem)
 		}
 	}
 	r.GET("/ping", func(c *gin.Context) {
@@ -108,17 +108,31 @@ func (a *Application) StartServer() {
 // @Param Description query string true "Описание продукта"
 // @Success      201  {object}  models.ModelProductCreated
 // @Failure 500 {object} models.ModelError
-// @Router       /api/products/create [Post]
+// @Router       /api/products/create [post]
 func (a *Application) CreateItem(c *gin.Context) {
-	price, _ := strconv.Atoi(c.Query("Price"))
-	car := ds.Product{
-		UUID:        uuid.New(),
-		Name:        c.Query("Name"),
-		Description: c.Query("Description"),
-		Price:       price,
+	product := ds.Product{}
+	if err := c.BindJSON(&product); err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "adding failed",
+				Error:       "db error",
+				Type:        "internal",
+			})
+		return
 	}
-
-	err := a.repo.CreateProduct(car)
+	if product.Price >= 0 {
+		c.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "The price cannot be non -negative",
+				Error:       "Price error",
+				Type:        "client",
+			})
+		return
+	}
+	product.UUID = uuid.New()
+	err := a.repo.CreateProduct(product)
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
@@ -134,7 +148,6 @@ func (a *Application) CreateItem(c *gin.Context) {
 		&models.ModelProductCreated{
 			Success: true,
 		})
-
 }
 
 // GetAllItems godoc
@@ -170,10 +183,21 @@ func (a *Application) GetAllItems(c *gin.Context) {
 // @Failure 	 500 {object} models.ModelError
 // @Router       /api/products/item [get]
 func (a *Application) GetItemById(c *gin.Context) {
-	uuid := c.Query("UUID")
+	uuid := c.Param("uuid")
+	//uuid := c.Query("UUID")
 	log.Println(uuid)
 	respName, respDesc, respPrice, err := a.repo.GetItemById(uuid)
 	if err != nil {
+		if respName == "no product found with this uuid" {
+			c.JSON(
+				http.StatusBadRequest,
+				&models.ModelError{
+					Description: "No product found with this uuid",
+					Error:       "uuid error",
+					Type:        "client",
+				})
+			return
+		}
 		c.JSON(
 			http.StatusInternalServerError,
 			&models.ModelError{
@@ -190,7 +214,6 @@ func (a *Application) GetItemById(c *gin.Context) {
 			Description: respDesc,
 			Price:       strconv.Itoa(respPrice),
 		})
-
 }
 
 // UpdateItem   godoc
@@ -204,14 +227,35 @@ func (a *Application) GetItemById(c *gin.Context) {
 // @Failure 	 500 {object} models.ModelError
 // @Router       /api/products/item [put]
 func (a *Application) UpdateItem(c *gin.Context) {
-	inputUuid, _ := uuid.Parse(c.Query("UUID"))
 	newPrice, _ := strconv.Atoi(c.Query("Price"))
-	err := a.repo.UpdateProduct(inputUuid, newPrice)
+	if newPrice <= 0 {
+		c.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "The price cannot be non -negative",
+				Error:       "Price error",
+				Type:        "client",
+			})
+		return
+	}
+	uuidR := c.Param("uuid")
+	inputUuid, _ := uuid.Parse(uuidR)
+	err, messageError := a.repo.UpdateProduct(inputUuid, newPrice)
 	if err != nil {
+		if messageError == "record not found" {
+			c.JSON(
+				http.StatusNotFound,
+				&models.ModelError{
+					Description: "record failed",
+					Error:       "db error",
+					Type:        "client",
+				})
+			return
+		}
 		c.JSON(
 			http.StatusInternalServerError,
 			&models.ModelError{
-				Description: "delete failed",
+				Description: "Update failed",
 				Error:       "db error",
 				Type:        "internal",
 			})
@@ -219,8 +263,8 @@ func (a *Application) UpdateItem(c *gin.Context) {
 	}
 	c.JSON(
 		http.StatusOK,
-		&models.ModelProductDeleted{
-			Delete: "successfully",
+		&models.ModelPriceUpdate{
+			Update: "successfully",
 		})
 }
 
@@ -234,11 +278,22 @@ func (a *Application) UpdateItem(c *gin.Context) {
 // @Failure 	 500 {object} models.ModelError
 // @Router       /api/products/item [delete]
 func (a *Application) DeleteItem(c *gin.Context) {
-	uuid := c.Query("UUID")
-	err := a.repo.DeleteProduct(uuid)
+	uuid := c.Param("uuid")
+	//uuid := c.Query("UUID")
+	messageError, err := a.repo.DeleteProduct(uuid)
 	if err != nil {
+		if messageError == "no product found with this uuid" {
+			c.JSON(
+				http.StatusBadRequest,
+				&models.ModelError{
+					Description: "No product found with this uuid",
+					Error:       "uuid error",
+					Type:        "client",
+				})
+			return
+		}
 		c.JSON(
-			http.StatusInternalServerError,
+			http.StatusNotFound,
 			&models.ModelError{
 				Description: "delete failed",
 				Error:       "db error",

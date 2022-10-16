@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package marletplace_api;
+option go_package = ".;marletplace_api";
+
+service MarketplaceService
+{
+  rpc GetPing(GetPingRequest) returns (GetPongResponse);
+}
+
+message GetPingRequest
+{
+  string ping = 1;
+}
+
+
+message GetPongResponse
+{
+  string pong = 1;
+}

@@ -53,26 +53,30 @@ func (r *Repository) GetItemById(uuid string) (string, string, int, error) {
 	var product ds.Product
 	result := r.db.First(&product, "uuid = ?", uuid)
 	if result.Error != nil {
-		return "", "", 0, result.Error
+		return "no product found with this uuid", "", 0, result.Error
 	}
 	return product.Name, product.Description, product.Price, nil
 }
 
-func (r *Repository) DeleteProduct(uuid string) error {
+func (r *Repository) DeleteProduct(uuid string) (string, error) {
 	var product ds.Product
 	result := r.db.Delete(&product, "uuid = ?", uuid)
 	if result.Error != nil {
-		return result.Error
+		return "no product found with this uuid", result.Error
 	}
-	return nil
+	return uuid, nil
 }
 
-func (r *Repository) UpdateProduct(uuid uuid.UUID, price int) error {
+func (r *Repository) UpdateProduct(uuid uuid.UUID, price int) (error, string) {
 	var product ds.Product
 	product.UUID = uuid
-	result := r.db.Model(&product).Update("price", price)
-	if result.Error != nil {
-		return result.Error
+	err := r.db.First(&product, "uuid = ?", uuid).Error
+	if err != nil {
+		return err, "record not found"
 	}
-	return nil
+	err = r.db.Model(&product).Update("price", price).Error
+	if err != nil {
+		return err, "record not update"
+	}
+	return nil, ""
 }
