@@ -27,19 +27,41 @@ img {
 }
 .product-img {
 }
+.oneproductimage{
+    margin: 0 auto;
+    display: block;
+    height: auto;
+    width: 20%;
+}
 .product-title{
     color: #000;
     font-weight: 500;
     text-transform: uppercase;
 }
+
+.oneproduct-title{
+    font-size:30px;
+    font-family: "Times New Roman", serif;
+    text-align: center;
+    color: #000;
+    font-weight: 700;
+    text-transform: uppercase;
+}
 .product-desc {
-    max-height: 60px;
-    overflow: hidden;
+    font-size:22px;
+    font-family: "Times New Roman", serif;
 }
 .product-price {
     bottom: 15px;
     left: 0;
     position: absolute;
+    width: 100%;
+    color: #f36;
+    font-size: 18px;
+    font-weight: 500;
+}
+.oneproduct-price {
+    text-align: center;
     width: 100%;
     color: #f36;
     font-size: 18px;

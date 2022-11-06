@@ -1,7 +1,7 @@
 export interface Product{
-    uuid: string
-    name: string
-    description: string
-    image: string
-    price: number
+    UUID: string
+    Price: number
+    Image: string
+    Name: string
+    Description: string
 }

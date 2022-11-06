@@ -1,9 +1,19 @@
 import {Products} from "../repository/Product";
 import {ProductShow} from "./Product";
+import {useEffect, useState} from "react";
 import React from "react";
+import {Product} from "../models";
+import {getJson} from "../modules";
 
 
 export function HomePage() {
+    const [Products, setProduct] = useState<Product[]>([])
+    const getAllProducts = async () => {
+        const result = await getJson("products/")
+        await setProduct(result)
+    }
+
+    useEffect(() => {getAllProducts()}, [])
     return (
         <>
             <p>/</p>

@@ -1,9 +1,18 @@
 import {Products} from "../repository/Product";
 import {ProductShow} from "./Product";
-import React from "react";
+import React, {useEffect, useState} from "react";
+import {Product} from "../models";
+import {getJson} from "../modules";
 
 
 export function MilkPage() {
+    const [Products, setProduct] = useState<Product[]>([])
+    const getAllProducts = async () => {
+        const result = await getJson("products/")
+        await setProduct(result)
+    }
+
+    useEffect(() => {getAllProducts()}, [])
     return (
         <>
             <p>/milk</p>
@@ -27,7 +36,7 @@ export function MilkPage() {
                     <div className="col-md-10 offset-md-0 products">
                         <div className="row">
                             {Products.map((product, key) => {
-                                if (product.name === "Молоко") {
+                                if (product.Name === "Молоко") {
                                     return <ProductShow product={product} key={key}/>
                                 }
                             })
