@@ -3,6 +3,8 @@ definitions:
     properties:
       description:
         type: string
+      image:
+        type: string
       name:
         type: string
       price:
@@ -50,7 +52,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/products:
+  /products:
     get:
       description: Get a list of all products
       produces:
@@ -67,7 +69,6 @@ paths:
       summary: Get all records
       tags:
       - Info
-  /api/products/create:
     post:
       description: Adding a new product to database
       parameters:
@@ -79,6 +80,11 @@ paths:
       - description: Название
         in: query
         name: Name
+        required: true
+        type: string
+      - description: Ссылка на фото
+        in: query
+        name: Image
         required: true
         type: string
       - description: Описание продукта
@@ -100,7 +106,7 @@ paths:
       summary: Add a new product
       tags:
       - Add
-  /api/products/item:
+  /products/:uuid:
     delete:
       description: Delete a product via its uuid
       parameters:

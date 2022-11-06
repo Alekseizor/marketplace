@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/google/uuid"
+	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -60,16 +60,19 @@ func (r *Repository) GetItemById(uuid string) (string, string, int, error) {
 
 func (r *Repository) DeleteProduct(uuid string) (string, error) {
 	var product ds.Product
-	result := r.db.Delete(&product, "uuid = ?", uuid)
+	result := r.db.First(&product, "uuid = ?", uuid)
 	if result.Error != nil {
 		return "no product found with this uuid", result.Error
+	}
+	result = r.db.Delete(&product, "uuid = ?", uuid)
+	if result.Error != nil {
+		return "", result.Error
 	}
 	return uuid, nil
 }
 
 func (r *Repository) UpdateProduct(uuid uuid.UUID, price int) (error, string) {
 	var product ds.Product
-	product.UUID = uuid
 	err := r.db.First(&product, "uuid = ?", uuid).Error
 	if err != nil {
 		return err, "record not found"

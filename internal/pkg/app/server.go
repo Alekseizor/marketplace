@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"github.com/satori/go.uuid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/driver/postgres"
@@ -21,19 +21,30 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
 func (a *Application) StartServer() {
 	log.Println("Server start up")
 	r := gin.New()
-	api := r.Group("/api")
+	r.Use(CORSMiddleware())
+	products := r.Group("/products")
 	{
-		products := api.Group("/products")
-		{
-			products.POST("/create", a.CreateItem)
-			products.GET("/", a.GetAllItems)
-			products.GET("/item/:uuid", a.GetItemById)
-			products.PUT("/item/:uuid", a.UpdateItem)
-			products.DELETE("/item/:uuid", a.DeleteItem)
-		}
+		products.POST("/", a.CreateItem)
+		products.GET("/", a.GetAllItems)
+		products.GET("/:uuid", a.GetItemById)
+		products.PUT("/:uuid", a.UpdateItem)
+		products.DELETE("/:uuid", a.DeleteItem)
 	}
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -95,7 +106,6 @@ func (a *Application) StartServer() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
-	log.Println("Server down")
 }
 
 // CreateItem godoc
@@ -105,10 +115,11 @@ func (a *Application) StartServer() {
 // @Produce      json
 // @Param Price query int true "Цена"
 // @Param Name query string true "Название"
+// @Param Image query string true "Ссылка на фото"
 // @Param Description query string true "Описание продукта"
 // @Success      201  {object}  models.ModelProductCreated
 // @Failure 500 {object} models.ModelError
-// @Router       /api/products/create [post]
+// @Router       /products [post]
 func (a *Application) CreateItem(c *gin.Context) {
 	product := ds.Product{}
 	if err := c.BindJSON(&product); err != nil {
@@ -121,7 +132,7 @@ func (a *Application) CreateItem(c *gin.Context) {
 			})
 		return
 	}
-	if product.Price >= 0 {
+	if product.Price <= 0 {
 		c.JSON(
 			http.StatusBadRequest,
 			&models.ModelError{
@@ -131,7 +142,7 @@ func (a *Application) CreateItem(c *gin.Context) {
 			})
 		return
 	}
-	product.UUID = uuid.New()
+	product.UUID = uuid.NewV4()
 	err := a.repo.CreateProduct(product)
 	if err != nil {
 		c.JSON(
@@ -157,7 +168,7 @@ func (a *Application) CreateItem(c *gin.Context) {
 // @Produce      json
 // @Success      200  {object}  ds.Product
 // @Failure 500 {object} models.ModelError
-// @Router       /api/products [get]
+// @Router       /products [get]
 func (a *Application) GetAllItems(c *gin.Context) {
 	resp, err := a.repo.GetProducts()
 	if err != nil {
@@ -181,7 +192,7 @@ func (a *Application) GetAllItems(c *gin.Context) {
 // @Param UUID query string true "UUID product"
 // @Success      200  {object}  models.ModelProductData
 // @Failure 	 500 {object} models.ModelError
-// @Router       /api/products/item [get]
+// @Router       /products/:uuid [get]
 func (a *Application) GetItemById(c *gin.Context) {
 	uuid := c.Param("uuid")
 	//uuid := c.Query("UUID")
@@ -225,8 +236,10 @@ func (a *Application) GetItemById(c *gin.Context) {
 // @Param Price query int true "New price"
 // @Success      200  {object}  models.ModelPriceUpdate
 // @Failure 	 500 {object} models.ModelError
-// @Router       /api/products/item [put]
+// @Router      /products/:uuid [put]
 func (a *Application) UpdateItem(c *gin.Context) {
+	uuidR := c.Param("uuid")
+	inputUuid, _ := uuid.FromString(uuidR)
 	newPrice, _ := strconv.Atoi(c.Query("Price"))
 	if newPrice <= 0 {
 		c.JSON(
@@ -238,8 +251,6 @@ func (a *Application) UpdateItem(c *gin.Context) {
 			})
 		return
 	}
-	uuidR := c.Param("uuid")
-	inputUuid, _ := uuid.Parse(uuidR)
 	err, messageError := a.repo.UpdateProduct(inputUuid, newPrice)
 	if err != nil {
 		if messageError == "record not found" {
@@ -276,7 +287,7 @@ func (a *Application) UpdateItem(c *gin.Context) {
 // @Param UUID query string true "UUID product"
 // @Success      200  {object}  models.ModelProductDeleted
 // @Failure 	 500 {object} models.ModelError
-// @Router       /api/products/item [delete]
+// @Router       /products/:uuid [delete]
 func (a *Application) DeleteItem(c *gin.Context) {
 	uuid := c.Param("uuid")
 	//uuid := c.Query("UUID")
@@ -293,9 +304,9 @@ func (a *Application) DeleteItem(c *gin.Context) {
 			return
 		}
 		c.JSON(
-			http.StatusNotFound,
+			http.StatusInternalServerError,
 			&models.ModelError{
-				Description: "delete failed",
+				Description: "Update failed",
 				Error:       "db error",
 				Type:        "internal",
 			})

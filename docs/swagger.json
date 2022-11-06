@@ -4,7 +4,7 @@
         "contact": {}
     },
     "paths": {
-        "/api/products": {
+        "/products": {
             "get": {
                 "description": "Get a list of all products",
                 "produces": [
@@ -28,9 +28,7 @@
                         }
                     }
                 }
-            }
-        },
-        "/api/products/create": {
+            },
             "post": {
                 "description": "Adding a new product to database",
                 "produces": [
@@ -52,6 +50,13 @@
                         "type": "string",
                         "description": "Название",
                         "name": "Name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ссылка на фото",
+                        "name": "Image",
                         "in": "query",
                         "required": true
                     },
@@ -79,7 +84,7 @@
                 }
             }
         },
-        "/api/products/item": {
+        "/products/:uuid": {
             "get": {
                 "description": "Get name, description, price for a product via uuid",
                 "produces": [
@@ -193,6 +198,9 @@
             "type": "object",
             "properties": {
                 "description": {
+                    "type": "string"
+                },
+                "image": {
                     "type": "string"
                 },
                 "name": {

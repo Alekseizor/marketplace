@@ -16,7 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/products": {
+        "/products": {
             "get": {
                 "description": "Get a list of all products",
                 "produces": [
@@ -40,9 +40,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/api/products/create": {
+            },
             "post": {
                 "description": "Adding a new product to database",
                 "produces": [
@@ -64,6 +62,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Название",
                         "name": "Name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ссылка на фото",
+                        "name": "Image",
                         "in": "query",
                         "required": true
                     },
@@ -91,7 +96,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/products/item": {
+        "/products/:uuid": {
             "get": {
                 "description": "Get name, description, price for a product via uuid",
                 "produces": [
@@ -205,6 +210,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "description": {
+                    "type": "string"
+                },
+                "image": {
                     "type": "string"
                 },
                 "name": {
