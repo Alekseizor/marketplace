@@ -5,3 +5,8 @@ export interface Product{
     Name: string
     Description: string
 }
+
+export interface ICart {
+    UUID: string
+    Product: string
+}

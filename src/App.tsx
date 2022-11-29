@@ -6,20 +6,29 @@ import {Products} from "./repository/Product";
 import {Routes, Route, BrowserRouter} from 'react-router-dom'
 import {HomePage} from "./components/HomePage";
 import {MilkPage} from "./components/Milk";
+import {Navbar} from "./components/Navbar";
 import {PaymentPage} from "./components/Payment";
+import {CartPage} from "./components/CartPage";
 
 export const ENDPOINT = "http://localhost:8080"
 
 function App() {
   return (
-      <BrowserRouter basename="/">
+      <BrowserRouter>
+          {/*<div className="line">*/}
+          {/*    <a href="/" className="inscription">МегаМаркет</a>*/}
+          {/*</div>*/}
+      <Navbar>
+      </Navbar>
           <Routes>
               <Route path="/" element={<HomePage/>}/>
               <Route path="/milk" element={<MilkPage/>}/>
               <Route path="/payment" element={<PaymentPage/>}/>
+              <Route path="/cart" element={<CartPage/>}/>
           </Routes>
-      </BrowserRouter>
-  );
+</BrowserRouter>
+
+);
 }
 
 export default App;
