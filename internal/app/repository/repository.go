@@ -49,13 +49,13 @@ func (r *Repository) GetProducts() ([]ds.Product, error) {
 
 }
 
-func (r *Repository) GetItemById(uuid string) (string, string, int, error) {
+func (r *Repository) GetItemById(uuid string) (ds.Product, string, error) {
 	var product ds.Product
 	result := r.db.First(&product, "uuid = ?", uuid)
 	if result.Error != nil {
-		return "no product found with this uuid", "", 0, result.Error
+		return product, "no product found with this uuid", result.Error
 	}
-	return product.Name, product.Description, product.Price, nil
+	return product, "", nil
 }
 
 func (r *Repository) DeleteProduct(uuid string) (string, error) {
@@ -82,4 +82,27 @@ func (r *Repository) UpdateProduct(uuid uuid.UUID, price int) (error, string) {
 		return err, "record not update"
 	}
 	return nil, ""
+}
+
+func (r *Repository) GetCart() ([]ds.Cart, error) {
+	var cart []ds.Cart
+	err := r.db.Find(&cart).Error
+	return cart, err
+}
+
+func (r *Repository) AddToCart(cart ds.Cart) error {
+	err := r.db.Create(&cart).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Repository) DeleteFromCart(product string) error {
+	var cart ds.Cart
+	err := r.db.Where("uuid = ?", product).Delete(&cart).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

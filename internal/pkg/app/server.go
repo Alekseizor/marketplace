@@ -25,6 +25,7 @@ func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -45,6 +46,12 @@ func (a *Application) StartServer() {
 		products.GET("/:uuid", a.GetItemById)
 		products.PUT("/:uuid", a.UpdateItem)
 		products.DELETE("/:uuid", a.DeleteItem)
+	}
+	cart := r.Group("/cart")
+	{
+		cart.POST("/", a.AddToCart)
+		cart.GET("/", a.GetCart)
+		cart.DELETE("/:uuid", a.DeleteFromCart)
 	}
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -197,7 +204,7 @@ func (a *Application) GetItemById(c *gin.Context) {
 	uuid := c.Param("uuid")
 	//uuid := c.Query("UUID")
 	log.Println(uuid)
-	respName, respDesc, respPrice, err := a.repo.GetItemById(uuid)
+	resp, respName, err := a.repo.GetItemById(uuid)
 	if err != nil {
 		if respName == "no product found with this uuid" {
 			c.JSON(
@@ -218,13 +225,7 @@ func (a *Application) GetItemById(c *gin.Context) {
 			})
 		return
 	}
-	c.JSON(
-		http.StatusOK,
-		&models.ModelProductData{
-			Name:        respName,
-			Description: respDesc,
-			Price:       strconv.Itoa(respPrice),
-		})
+	c.JSON(http.StatusOK, resp)
 }
 
 // UpdateItem   godoc
@@ -316,5 +317,76 @@ func (a *Application) DeleteItem(c *gin.Context) {
 		http.StatusOK,
 		&models.ModelProductDeleted{
 			Delete: "successfully",
+		})
+}
+
+func (a *Application) GetCart(c *gin.Context) {
+	resp, err := a.repo.GetCart()
+	log.Println("я тут")
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "Update failed",
+				Error:       "db error",
+				Type:        "internal",
+			})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+
+}
+
+func (a *Application) AddToCart(c *gin.Context) {
+	cart := ds.Cart{}
+	err := c.BindJSON(&cart)
+	if err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "No product found with this uuid",
+				Error:       "uuid error",
+				Type:        "client",
+			})
+		return
+	}
+	cart.UUID = uuid.NewV4()
+	err = a.repo.AddToCart(cart)
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "Update failed",
+				Error:       "db error",
+				Type:        "internal",
+			})
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		&models.ModelCartCreated{
+			Success: "successfully",
+		})
+
+}
+
+func (a *Application) DeleteFromCart(c *gin.Context) {
+	UUID := c.Param("uuid")
+	log.Println("z nen")
+	err := a.repo.DeleteFromCart(UUID)
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "Update failed",
+				Error:       "db error",
+				Type:        "internal",
+			})
+		return
+	}
+	c.JSON(
+		http.StatusOK,
+		&models.ModelCartDeleted{
+			Success: "successfully",
 		})
 }
