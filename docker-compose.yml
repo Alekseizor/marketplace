@@ -12,7 +12,16 @@ services: # имеджи, которые запустятся по вашему 
       POSTGRES_USER: marketplace_user
       POSTGRES_DB: marketplace_db
       POSTGRES_PASSWORD: marketplace_password
-
+  redis:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - redis-data:/data
 volumes: # часть настроек для хранения данных
   postgresdb-data:
+    driver: local
+  redis-data:
     driver: local

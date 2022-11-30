@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 	"marketplace/internal/pkg/app"
+	"os"
 )
 
 //@title Marketplace API
@@ -16,8 +19,21 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
-	log.Println("Application start")
-	app := app.New()
-	app.Run()
-	log.Println("Application terminated")
+	err := godotenv.Load(".env")
+	ctx := context.Background()
+	log.Println("app start")
+
+	application, err := app.New(ctx)
+	if err != nil {
+		log.Printf("cant create application: %s", err)
+		os.Exit(2)
+	}
+	err = application.Run()
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("can`t run application")
+		log.Printf("can`t run application: %s", err)
+
+		os.Exit(2)
+	}
+
 }

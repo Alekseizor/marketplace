@@ -5,14 +5,11 @@ import (
 	"github.com/satori/go.uuid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 	"log"
 	_ "marketplace/docs"
 	"marketplace/internal/app/ds"
-	"marketplace/internal/app/dsn"
+	"marketplace/internal/app/role"
 	"marketplace/swagger/models"
-	"math/rand"
 	"net/http"
 	"strconv"
 )
@@ -24,8 +21,9 @@ type errorResponse struct {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -53,63 +51,67 @@ func (a *Application) StartServer() {
 		cart.GET("/", a.GetCart)
 		cart.DELETE("/:uuid", a.DeleteFromCart)
 	}
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	r.GET("/product", func(c *gin.Context) {
-		id := c.Query("id")
-		if id != "" {
-			log.Printf("id recived %s\n", id)
-			intID, err := strconv.Atoi(id) // пытаемся привести это к чиселке
-			if err != nil {                // если не получилось
-				log.Printf("cant convert id %v", err)
-				c.Error(err)
-				return
-			}
-			log.Println("я тут")
-			product, err := a.repo.GetProductByID(intID)
-			if err != nil { // если не получилось
-				log.Printf("cant get product by id %v", err)
-				c.Error(err)
-				return
-			}
-
-			c.JSON(http.StatusOK, gin.H{
-				"product_description": product.Description,
-				"product_name":        product.Name,
-				"product_price":       product.Price,
-			})
-			return
-		}
-		create := c.Query("create")
-		if create != "" {
-			log.Printf("id recived %s\n", create)
-			if create == "true" {
-				productRandom := [5]string{"donkey toy", "sneakers", "sweater", "T-shirt", "pacifier"}
-				product := ds.Product{Name: productRandom[rand.Intn(4)], Description: productRandom[rand.Intn(4)], Price: rand.Intn(15000)}
-				db, err := gorm.Open(postgres.Open(dsn.FromEnv()), &gorm.Config{})
-				if err != nil {
-					panic("failed to connect database")
-				}
-				db.Create(&product)
-			}
-		}
-	})
+	r.GET("/logout", a.Logout)
+	r.POST("/login", a.Login)
+	r.POST("/sign_up", a.Register)
+	//r.GET("/ping", func(c *gin.Context) {
+	//	c.JSON(http.StatusOK, gin.H{
+	//		"message": "pong",
+	//	})
+	//})
+	//r.GET("/product", func(c *gin.Context) {
+	//	id := c.Query("id")
+	//	if id != "" {
+	//		log.Printf("id recived %s\n", id)
+	//		intID, err := strconv.Atoi(id) // пытаемся привести это к чиселке
+	//		if err != nil {                // если не получилось
+	//			log.Printf("cant convert id %v", err)
+	//			c.Error(err)
+	//			return
+	//		}
+	//		log.Println("я тут")
+	//		product, err := a.repo.GetProductByID(intID)
+	//		if err != nil { // если не получилось
+	//			log.Printf("cant get product by id %v", err)
+	//			c.Error(err)
+	//			return
+	//		}
+	//
+	//		c.JSON(http.StatusOK, gin.H{
+	//			"product_description": product.Description,
+	//			"product_name":        product.Name,
+	//			"product_price":       product.Price,
+	//		})
+	//		return
+	//	}
+	//	create := c.Query("create")
+	//	if create != "" {
+	//		log.Printf("id recived %s\n", create)
+	//		if create == "true" {
+	//			productRandom := [5]string{"donkey toy", "sneakers", "sweater", "T-shirt", "pacifier"}
+	//			product := ds.Product{Name: productRandom[rand.Intn(4)], Description: productRandom[rand.Intn(4)], Price: rand.Intn(15000)}
+	//			db, err := gorm.Open(postgres.Open(dsn.FromEnv()), &gorm.Config{})
+	//			if err != nil {
+	//				panic("failed to connect database")
+	//			}
+	//			db.Create(&product)
+	//		}
+	//	}
+	//})
 	r.LoadHTMLGlob("templates/*")
-	r.GET("/home", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"title": "Marketplace",
-		})
-	})
-	r.GET("/birthday", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "birthday.tmpl", gin.H{
-			"title":    "My desired gifts",
-			"presents": []string{"work in vk", "work in Yandex", "Maksim Konovalov", "Ilya Pavlyukov"},
-		})
-	})
-	r.Static("/image", "./resourсes")
+	//r.GET("/home", func(c *gin.Context) {
+	//	c.HTML(http.StatusOK, "index.tmpl", gin.H{
+	//		"title": "Marketplace",
+	//	})
+	//})
+	//r.GET("/birthday", func(c *gin.Context) {
+	//	c.HTML(http.StatusOK, "birthday.tmpl", gin.H{
+	//		"title":    "My desired gifts",
+	//		"presents": []string{"work in vk", "work in Yandex", "Maksim Konovalov", "Ilya Pavlyukov"},
+	//	})
+	//})
+	//r.Static("/image", "./resourсes")
+	r.Use(a.WithAuthCheck(role.Manager, role.Admin)).GET("/ping", a.Ping)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
@@ -203,7 +205,6 @@ func (a *Application) GetAllItems(c *gin.Context) {
 func (a *Application) GetItemById(c *gin.Context) {
 	uuid := c.Param("uuid")
 	//uuid := c.Query("UUID")
-	log.Println(uuid)
 	resp, respName, err := a.repo.GetItemById(uuid)
 	if err != nil {
 		if respName == "no product found with this uuid" {
@@ -322,7 +323,6 @@ func (a *Application) DeleteItem(c *gin.Context) {
 
 func (a *Application) GetCart(c *gin.Context) {
 	resp, err := a.repo.GetCart()
-	log.Println("я тут")
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
