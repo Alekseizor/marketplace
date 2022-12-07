@@ -9,7 +9,7 @@ import {AddToCart} from "../requests/AddToCart";
 
 export function Cart() {
     const ctx = useContext(MyContext)
-    let Product = GetProduct(ctx.Product)
+    let Product = GetProduct(ctx.StoreUUID)
     return (
         <div className="col-sm-3 offset-md-0">
             <div className="product-one">

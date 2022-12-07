@@ -10,5 +10,5 @@ export let product_context: Product = {
 }
 export let cart_context: ICart = {
     UUID: "",
-    Product: "",
+    StoreUUID: "",
 }

@@ -93,7 +93,7 @@ export function HomePage() {
                             {filteredProducts.filter((product: { Price: number; }) => product.Price >= price[0] && product.Price <= price[1]).map((product: Product) => {
                                 return (
                                     <MyContext.Provider value={product}>
-                                        <ProductShow product={product}/>
+                                        <ProductShow/>
                                     </MyContext.Provider>
                                 )
                             })

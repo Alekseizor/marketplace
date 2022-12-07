@@ -1,5 +1,5 @@
 import {useEffect, useReducer} from "react";
-import {getJsonCart} from "../modules";
+import {getFromBackendToken} from "../modules";
 
 
 const initialState = {cart: []}
@@ -19,9 +19,8 @@ function reducer(state: any, action: { type: any; payload: any; }) {
 export function GetCart() {
     const [state, dispatch] = useReducer(reducer, initialState)
     const url = `cart/`
-
     useEffect(() => {
-        getJsonCart(url).then((result) => {
+        getFromBackendToken(url).then((result) => {
             dispatch({type: success, payload: result})
         })
     }, [url])

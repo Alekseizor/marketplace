@@ -8,5 +8,5 @@ export interface Product{
 
 export interface ICart {
     UUID: string
-    Product: string
+    StoreUUID: string
 }

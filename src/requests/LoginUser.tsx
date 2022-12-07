@@ -7,6 +7,8 @@ export function LoginUser(name: string, pass: string) {
 
     function Login() {
         loginUser(url, name, pass)
+        console.log(name)
+        console.log(pass)
     }
 
 

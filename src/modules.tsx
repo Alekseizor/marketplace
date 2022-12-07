@@ -9,6 +9,17 @@ export const getJsonProducts = async (url: string) => {
     return res
 }
 
+export function getToken() {
+    let tokens = document.cookie.split(' ')
+    let access_token = ''
+    for (var i = 0; i < tokens.length; i++) {
+        if (tokens[i].startsWith("access_token=")) {
+            access_token = tokens[i].replace("access_token=", "")
+        }
+    }
+    return access_token.replace(";", "")
+}
+
 export const getJsonProduct = async (url: string) => {
     const res = await fetch(`${ENDPOINT}/${url}`).then((r) => r.json() as Promise<Product>)
     return res
@@ -24,25 +35,24 @@ export const deleteCart = async (url: string) => {
     return res
 }
 
-export const addToCart = async (url: string, uuid: string) => {
-    const res = await fetch(`${ENDPOINT}/${url}` , {
-        method: "POST",
-        headers: {
-            'Content-type': 'application/json'
-        },
-        body: JSON.stringify({Product: uuid})
+export function addToCart (url: string, uuid: string)  {
+    const body = { StoreUUID: uuid }
+    let access_token = getToken()
+    return  axios.post(`${ENDPOINT}/${url}`, body, {withCredentials: true, headers: {
+            "Authorization": `Bearer ${access_token}`
+        }}).then(function (response) {
+        console.log(response);
     })
-    console.log(5)
-    console.log(res.body)
-    return res
 }
 
 export function createUser(url: string, name: string, pass: string) {
     const body = {name: name, pass: pass}
-    return axios.post(`${ENDPOINT}/${url}`, body).then(function (response) {
-        console.log(response);
+    return axios.post(`${ENDPOINT}/${url}`, body, {withCredentials: true}).then(function (response) {
+        console.log(response)
+        window.location.replace("/login")
+    }).catch(function () {
+        window.location.replace("/registration")
     })
-
 }
 
 
@@ -65,4 +75,18 @@ export function logoutUser (url: string) {
         console.log(r.data)
         window.location.replace("/login")
     })
+}
+
+export function getFromBackendToken(url: string) {
+    let access_token = getToken()
+    return axios.get(`${ENDPOINT}/${url}`, {withCredentials: true, headers: {
+            "Authorization": `Bearer ${access_token}`
+        }}).then(r => r.data)
+}
+
+export function deleteFromBackendToken(url: string) {
+    let access_token = getToken()
+    return axios.delete(`${ENDPOINT}/${url}`, {withCredentials: true, headers: {
+            "Authorization": `Bearer ${access_token}`
+        }}).then(r => r.data)
 }
