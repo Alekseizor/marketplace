@@ -3,7 +3,7 @@ import React from "react";
 
 export function AddToCart(uuid: string) {
 
-    const url = `cart/`
+    const url = `cart`
 
     function Add() {
         addToCart(url, uuid)

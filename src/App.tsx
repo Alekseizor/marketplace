@@ -11,15 +11,16 @@ import {CartPage} from "./components/CartPage";
 import {Registration} from "./components/RegisterPage";
 import {LoginPage} from "./components/LoginPage";
 import {useCookies} from "react-cookie";
+import {ChangeProduct} from "./components/ChangeProduct";
+import {AddProduct} from "./components/AddProduct";
+import {ProfilePage} from "./components/ProfilePage";
+import {OrderPage} from "./components/OrderPage";
 
 export const ENDPOINT = "http://localhost:8080"
 
 function App() {
   return (
       <BrowserRouter>
-          {/*<div className="line">*/}
-          {/*    <a href="/" className="inscription">МегаМаркет</a>*/}
-          {/*</div>*/}
       <Navbar/>
           <Routes>
               <Route path="/" element={<HomePage/>}/>
@@ -27,9 +28,12 @@ function App() {
               <Route path="/cart" element={<CartPage/>}/>
               <Route path="/login" element={<LoginPage/>}/>
               <Route path="/registration" element={<Registration/>}/>
+              <Route path="/add" element={<AddProduct/>}/>
+              <Route path="/change" element={<ChangeProduct/>}/>
+              <Route path="/profile" element={<ProfilePage/>}></Route>
+              <Route path="/orders" element={<OrderPage/>}></Route>
           </Routes>
 </BrowserRouter>
-
 );
 }
 

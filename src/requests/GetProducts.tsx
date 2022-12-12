@@ -17,7 +17,7 @@ function reducer(state: any, action: { type: any; products: any; }) {
 
 export function GetProducts() {
     const [state, dispatch] = useReducer(reducer, initialState)
-    const url = `products/`
+    const url = `products`
 
     useEffect(() => {
         getJsonProducts(url).then((result) => {

@@ -18,7 +18,7 @@ function reducer(state: any, action: { type: any; payload: any; }) {
 
 export function GetCart() {
     const [state, dispatch] = useReducer(reducer, initialState)
-    const url = `cart/`
+    const url = `cart`
     useEffect(() => {
         getFromBackendToken(url).then((result) => {
             dispatch({type: success, payload: result})

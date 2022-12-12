@@ -9,13 +9,15 @@ import {Bars3Icon, XMarkIcon} from "@heroicons/react/24/outline";
 const navigation = [
     { name: 'Маркетплейс', href: '/'},
     { name: 'Корзина', href: '/cart'},
+    { name: 'Заказы', href: '/orders'},
+    { name: 'Создать продукт', href: '/add'},
 ]
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(' ')
 }
 
-export  function LoginNavbar() {
+export  function ManagerNavbar() {
     return (
         <Disclosure as="nav" className="bg-slate-50">
             {({ open }) => (
