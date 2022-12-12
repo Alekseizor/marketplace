@@ -54,7 +54,7 @@ func (a *Application) Login(gCtx *gin.Context) {
 				IssuedAt:  time.Now().Unix(),
 				Issuer:    "bitop-admin",
 			},
-			UserUUID: uuid.New(), // test uuid
+			UserUUID: user.UUID, // test uuid
 			Role:     user.Role,
 		})
 
@@ -149,6 +149,10 @@ func generateHashString(s string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+type logoutResp struct {
+	Status bool `json:"status"`
+}
+
 func (a *Application) Logout(gCtx *gin.Context) {
 	jwtStr := gCtx.GetHeader("Authorization")
 	if !strings.HasPrefix(jwtStr, jwtPrefix) { // если нет префикса то нас дурят!
@@ -179,5 +183,14 @@ func (a *Application) Logout(gCtx *gin.Context) {
 	}
 
 	gCtx.SetCookie("access_token", "", -1, "/", "localhost", false, false)
-	gCtx.Status(http.StatusOK)
+	gCtx.JSON(http.StatusOK, &logoutResp{
+		Status: true,
+	})
+}
+
+func (a *Application) Role(gCtx *gin.Context) {
+	jwtStr := gCtx.GetHeader("Authorization")
+	role := a.GetRoleByToken(jwtStr)
+
+	gCtx.JSON(http.StatusOK, role)
 }

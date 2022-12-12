@@ -1,6 +1,6 @@
 package ds
 
-import "github.com/satori/go.uuid"
+import "github.com/google/uuid"
 
 type Product struct {
 	UUID        uuid.UUID `db:"uuid" gorm:"type:uuid;primary_key;"`

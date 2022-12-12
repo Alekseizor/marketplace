@@ -1,8 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS carts (
-                    "uuid" varchar(255) not null primary key,
-                    "product" varchar(255) not null
+                    "uuid" uuid not null primary key,
+                    store_uuid uuid,
+                    user_uuid  uuid
 );
 -- +goose StatementEnd
 

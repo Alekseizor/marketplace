@@ -1,7 +1,8 @@
 package repository
 
 import (
-	"github.com/satori/go.uuid"
+	"errors"
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,17 +24,6 @@ func New(dsn string) (*Repository, error) {
 	}, nil
 }
 
-func (r *Repository) GetProductByID(id int) (*ds.Product, error) {
-	log.Println("я тут")
-	product := &ds.Product{}
-	err := r.db.First(product, id).Error // find product with code D42
-	if err != nil {
-		return nil, err
-	}
-
-	return product, nil
-}
-
 func (r *Repository) CreateProduct(product ds.Product) error {
 	return r.db.Create(product).Error
 }
@@ -49,7 +39,7 @@ func (r *Repository) GetProducts() ([]ds.Product, error) {
 
 }
 
-func (r *Repository) GetItemById(uuid string) (ds.Product, string, error) {
+func (r *Repository) GetItemById(uuid uuid.UUID) (ds.Product, string, error) {
 	var product ds.Product
 	result := r.db.First(&product, "uuid = ?", uuid)
 	if result.Error != nil {
@@ -58,7 +48,36 @@ func (r *Repository) GetItemById(uuid string) (ds.Product, string, error) {
 	return product, "", nil
 }
 
-func (r *Repository) DeleteProduct(uuid string) (string, error) {
+func (r *Repository) GetProductPrice(uuid uuid.UUID) (int, error) {
+	var product ds.Product
+	err := r.db.First(&product, "uuid = ?", uuid).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 404, err
+		}
+		return 500, err
+	}
+	return product.Price, err
+}
+
+func (r *Repository) ChangePrice(uuid uuid.UUID, price int) (int, error) {
+	var product ds.Product
+	err := r.db.First(&product, "uuid = ?", uuid).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 404, err
+		}
+		return 500, err
+	}
+	err = r.db.Model(&product).Update("Price", price).Error
+	//if errors.Is(err, gorm.ErrRecordNotFound)
+	if err != nil {
+		return 500, err
+	}
+	return 0, nil
+}
+
+func (r *Repository) DeleteProduct(uuid uuid.UUID) (string, error) {
 	var product ds.Product
 	result := r.db.First(&product, "uuid = ?", uuid)
 	if result.Error != nil {
@@ -68,25 +87,22 @@ func (r *Repository) DeleteProduct(uuid string) (string, error) {
 	if result.Error != nil {
 		return "", result.Error
 	}
-	return uuid, nil
+	return "ОК", nil
 }
 
-func (r *Repository) UpdateProduct(uuid uuid.UUID, price int) (error, string) {
-	var product ds.Product
-	err := r.db.First(&product, "uuid = ?", uuid).Error
+func (r *Repository) UpdateProduct(uuid uuid.UUID, product ds.Product) (int, error) {
+	product.UUID = uuid
+	err := r.db.Model(&product).Updates(ds.Product{Name: product.Name, Price: product.Price, Description: product.Description, Image: product.Image}).Error
+	//if errors.Is(err, gorm.ErrRecordNotFound)
 	if err != nil {
-		return err, "record not found"
+		return 500, err
 	}
-	err = r.db.Model(&product).Update("price", price).Error
-	if err != nil {
-		return err, "record not update"
-	}
-	return nil, ""
+	return 0, nil
 }
 
-func (r *Repository) GetCart() ([]ds.Cart, error) {
+func (r *Repository) GetCart(userUUID uuid.UUID) ([]ds.Cart, error) {
 	var cart []ds.Cart
-	err := r.db.Find(&cart).Error
+	err := r.db.Where("user_uuid = ?", userUUID).Find(&cart).Error
 	return cart, err
 }
 
@@ -98,13 +114,22 @@ func (r *Repository) AddToCart(cart ds.Cart) error {
 	return nil
 }
 
-func (r *Repository) DeleteFromCart(product string) error {
+func (r *Repository) DeleteCart(storeUUID uuid.UUID) (int, error) {
 	var cart ds.Cart
-	err := r.db.Where("uuid = ?", product).Delete(&cart).Error
+	log.Println(storeUUID)
+	err := r.db.First(&cart, "uuid = ?", storeUUID).Error
 	if err != nil {
-		return err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 404, err
+		}
+		return 500, err
 	}
-	return nil
+
+	err = r.db.Delete(&cart, "uuid = ?", storeUUID).Error
+	if err != nil {
+		return 500, err
+	}
+	return 0, nil
 }
 
 func (r *Repository) Register(user *ds.User) error {

@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
@@ -11,7 +11,6 @@ import (
 	"marketplace/internal/app/role"
 	"marketplace/swagger/models"
 	"net/http"
-	"strconv"
 )
 
 type errorResponse struct {
@@ -21,9 +20,9 @@ type errorResponse struct {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, UPDATE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept, Authorization")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Max")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -35,85 +34,36 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 func (a *Application) StartServer() {
 	log.Println("Server start up")
-	r := gin.New()
+
+	r := gin.Default()
+
 	r.Use(CORSMiddleware())
-	products := r.Group("/products")
-	{
-		products.POST("/", a.CreateItem)
-		products.GET("/", a.GetAllItems)
-		products.GET("/:uuid", a.GetItemById)
-		products.PUT("/:uuid", a.UpdateItem)
-		products.DELETE("/:uuid", a.DeleteItem)
-	}
-	cart := r.Group("/cart")
-	{
-		cart.POST("/", a.AddToCart)
-		cart.GET("/", a.GetCart)
-		cart.DELETE("/:uuid", a.DeleteFromCart)
-	}
-	r.GET("/logout", a.Logout)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/products", a.GetAllItems)
+	r.GET("/products/:uuid", a.GetItemById)
+
+	r.GET("/products/price/:uuid", a.GetProductPrice)
+
+	r.POST("/cart", a.AddToCart)
+	r.POST("/orders", a.AddOrder)
 	r.POST("/login", a.Login)
 	r.POST("/sign_up", a.Register)
-	//r.GET("/ping", func(c *gin.Context) {
-	//	c.JSON(http.StatusOK, gin.H{
-	//		"message": "pong",
-	//	})
-	//})
-	//r.GET("/product", func(c *gin.Context) {
-	//	id := c.Query("id")
-	//	if id != "" {
-	//		log.Printf("id recived %s\n", id)
-	//		intID, err := strconv.Atoi(id) // пытаемся привести это к чиселке
-	//		if err != nil {                // если не получилось
-	//			log.Printf("cant convert id %v", err)
-	//			c.Error(err)
-	//			return
-	//		}
-	//		log.Println("я тут")
-	//		product, err := a.repo.GetProductByID(intID)
-	//		if err != nil { // если не получилось
-	//			log.Printf("cant get product by id %v", err)
-	//			c.Error(err)
-	//			return
-	//		}
-	//
-	//		c.JSON(http.StatusOK, gin.H{
-	//			"product_description": product.Description,
-	//			"product_name":        product.Name,
-	//			"product_price":       product.Price,
-	//		})
-	//		return
-	//	}
-	//	create := c.Query("create")
-	//	if create != "" {
-	//		log.Printf("id recived %s\n", create)
-	//		if create == "true" {
-	//			productRandom := [5]string{"donkey toy", "sneakers", "sweater", "T-shirt", "pacifier"}
-	//			product := ds.Product{Name: productRandom[rand.Intn(4)], Description: productRandom[rand.Intn(4)], Price: rand.Intn(15000)}
-	//			db, err := gorm.Open(postgres.Open(dsn.FromEnv()), &gorm.Config{})
-	//			if err != nil {
-	//				panic("failed to connect database")
-	//			}
-	//			db.Create(&product)
-	//		}
-	//	}
-	//})
-	r.LoadHTMLGlob("templates/*")
-	//r.GET("/home", func(c *gin.Context) {
-	//	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-	//		"title": "Marketplace",
-	//	})
-	//})
-	//r.GET("/birthday", func(c *gin.Context) {
-	//	c.HTML(http.StatusOK, "birthday.tmpl", gin.H{
-	//		"title":    "My desired gifts",
-	//		"presents": []string{"work in vk", "work in Yandex", "Maksim Konovalov", "Ilya Pavlyukov"},
-	//	})
-	//})
-	//r.Static("/image", "./resourсes")
-	r.Use(a.WithAuthCheck(role.Manager, role.Admin)).GET("/ping", a.Ping)
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/logout", a.Logout)
+	r.GET("/role", a.Role)
+
+	r.DELETE("/cart/:uuid", a.DeleteFromCart)
+
+	r.Use(a.WithAuthCheck(role.Buyer, role.Manager, role.Admin)).GET("/cart", a.GetCart)
+	r.Use(a.WithAuthCheck(role.Manager)).POST("/products", a.CreateItem)
+	r.Use(a.WithAuthCheck(role.Manager)).GET("/orders", a.GetOrders)
+	r.Use(a.WithAuthCheck(role.Manager)).GET("/user/:uuid", a.GetUser)
+	r.Use(a.WithAuthCheck(role.Manager)).PUT("/orders/:uuid", a.ChangeStatus)
+	r.Use(a.WithAuthCheck(role.Manager)).DELETE("/products/:uuid", a.DeleteItem)
+	r.Use(a.WithAuthCheck(role.Manager)).PUT("/products/:uuid", a.UpdateItem)
+
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+
 	log.Println("Server down")
 }
 
@@ -151,7 +101,7 @@ func (a *Application) CreateItem(c *gin.Context) {
 			})
 		return
 	}
-	product.UUID = uuid.NewV4()
+	product.UUID = uuid.New()
 	err := a.repo.CreateProduct(product)
 	if err != nil {
 		c.JSON(
@@ -203,7 +153,11 @@ func (a *Application) GetAllItems(c *gin.Context) {
 // @Failure 	 500 {object} models.ModelError
 // @Router       /products/:uuid [get]
 func (a *Application) GetItemById(c *gin.Context) {
-	uuid := c.Param("uuid")
+	uuid, err := uuid.Parse(c.Param("uuid"))
+	if err != nil {
+		log.Println("failed to create uuid from string")
+		return
+	}
 	//uuid := c.Query("UUID")
 	resp, respName, err := a.repo.GetItemById(uuid)
 	if err != nil {
@@ -239,45 +193,57 @@ func (a *Application) GetItemById(c *gin.Context) {
 // @Success      200  {object}  models.ModelPriceUpdate
 // @Failure 	 500 {object} models.ModelError
 // @Router      /products/:uuid [put]
-func (a *Application) UpdateItem(c *gin.Context) {
-	uuidR := c.Param("uuid")
-	inputUuid, _ := uuid.FromString(uuidR)
-	newPrice, _ := strconv.Atoi(c.Query("Price"))
-	if newPrice <= 0 {
-		c.JSON(
+func (a *Application) UpdateItem(gCtx *gin.Context) {
+	UUID, err := uuid.Parse(gCtx.Param("uuid"))
+	if err != nil {
+		gCtx.JSON(
 			http.StatusBadRequest,
 			&models.ModelError{
-				Description: "The price cannot be non -negative",
-				Error:       "Price error",
-				Type:        "client",
+				Description: "Invalid UUID format",
+				Error:       models.Err400,
+				Type:        models.TypeClientReq,
 			})
 		return
 	}
-	err, messageError := a.repo.UpdateProduct(inputUuid, newPrice)
+	product := ds.Product{}
+	err = gCtx.BindJSON(&product)
 	if err != nil {
-		if messageError == "record not found" {
-			c.JSON(
+		gCtx.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "The price is negative or not int",
+				Error:       models.Err400,
+				Type:        models.TypeClientReq,
+			})
+		return
+	}
+	resp, err := a.repo.UpdateProduct(UUID, product)
+	if err != nil {
+		if resp == 404 {
+			gCtx.JSON(
 				http.StatusNotFound,
 				&models.ModelError{
-					Description: "record failed",
-					Error:       "db error",
-					Type:        "client",
+					Description: "UUID Not Found",
+					Error:       models.Err404,
+					Type:        models.TypeClientReq,
+				})
+			return
+		} else {
+			gCtx.JSON(
+				http.StatusInternalServerError,
+				&models.ModelError{
+					Description: "Change failed",
+					Error:       models.Err500,
+					Type:        models.TypeInternalReq,
 				})
 			return
 		}
-		c.JSON(
-			http.StatusInternalServerError,
-			&models.ModelError{
-				Description: "Update failed",
-				Error:       "db error",
-				Type:        "internal",
-			})
-		return
 	}
-	c.JSON(
+
+	gCtx.JSON(
 		http.StatusOK,
-		&models.ModelPriceUpdate{
-			Update: "successfully",
+		&models.ModelPriceChanged{
+			Success: true,
 		})
 }
 
@@ -291,7 +257,7 @@ func (a *Application) UpdateItem(c *gin.Context) {
 // @Failure 	 500 {object} models.ModelError
 // @Router       /products/:uuid [delete]
 func (a *Application) DeleteItem(c *gin.Context) {
-	uuid := c.Param("uuid")
+	uuid, err := uuid.Parse(c.Param("uuid"))
 	//uuid := c.Query("UUID")
 	messageError, err := a.repo.DeleteProduct(uuid)
 	if err != nil {
@@ -321,23 +287,26 @@ func (a *Application) DeleteItem(c *gin.Context) {
 		})
 }
 
-func (a *Application) GetCart(c *gin.Context) {
-	resp, err := a.repo.GetCart()
+func (a *Application) GetCart(gCtx *gin.Context) {
+	jwtStr := gCtx.GetHeader("Authorization")
+	userUUID := a.GetUserByToken(jwtStr)
+	resp, err := a.repo.GetCart(userUUID)
 	if err != nil {
-		c.JSON(
+		gCtx.JSON(
 			http.StatusInternalServerError,
 			&models.ModelError{
-				Description: "Update failed",
-				Error:       "db error",
-				Type:        "internal",
+				Description: "Can't get a list of promo codes",
+				Error:       "uuid error",
+				Type:        "client",
 			})
 		return
 	}
-	c.JSON(http.StatusOK, resp)
-
+	gCtx.JSON(http.StatusOK, resp)
 }
 
 func (a *Application) AddToCart(c *gin.Context) {
+	jwtStr := c.GetHeader("Authorization")
+	userUUID := a.GetUserByToken(jwtStr)
 	cart := ds.Cart{}
 	err := c.BindJSON(&cart)
 	if err != nil {
@@ -350,7 +319,8 @@ func (a *Application) AddToCart(c *gin.Context) {
 			})
 		return
 	}
-	cart.UUID = uuid.NewV4()
+	cart.UUID = uuid.New()
+	cart.UserUUID = userUUID
 	err = a.repo.AddToCart(cart)
 	if err != nil {
 		c.JSON(
@@ -371,9 +341,23 @@ func (a *Application) AddToCart(c *gin.Context) {
 }
 
 func (a *Application) DeleteFromCart(c *gin.Context) {
-	UUID := c.Param("uuid")
+	//jwtStr := c.GetHeader("Authorization")
+	//userUUID := a.GetUserByToken(jwtStr)
+	store, err := uuid.Parse(c.Param("uuid"))
+	if err != nil {
+		log.Println(store)
+		c.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "Не получилось преобразовать в UUID",
+				Error:       "UUID",
+				Type:        "internal",
+			})
+		return
+	}
+	//UUID := c.Param("uuid")
 	log.Println("z nen")
-	err := a.repo.DeleteFromCart(UUID)
+	_, err = a.repo.DeleteCart(store)
 	if err != nil {
 		c.JSON(
 			http.StatusInternalServerError,
@@ -389,4 +373,88 @@ func (a *Application) DeleteFromCart(c *gin.Context) {
 		&models.ModelCartDeleted{
 			Success: "successfully",
 		})
+}
+
+func (a *Application) GetCarPrice(gCtx *gin.Context) {
+	uuid, err := uuid.Parse(gCtx.Param("uuid"))
+	if err != nil {
+		gCtx.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "Invalid UUID format",
+				Error:       models.Err400,
+				Type:        models.TypeClientReq,
+			})
+		return
+	}
+	resp, err := a.repo.GetProductPrice(uuid)
+	if err != nil {
+		if resp == 404 {
+			gCtx.JSON(
+				http.StatusNotFound,
+				&models.ModelError{
+					Description: "UUID Not Found",
+					Error:       models.Err404,
+					Type:        models.TypeClientReq,
+				})
+			return
+		} else {
+			gCtx.JSON(
+				http.StatusInternalServerError,
+				&models.ModelError{
+					Description: "Get car price failed",
+					Error:       models.Err500,
+					Type:        models.TypeInternalReq,
+				})
+			return
+		}
+	}
+	gCtx.JSON(
+		http.StatusOK,
+		&models.ModelProductPrice{
+			Price: resp,
+		})
+
+}
+
+func (a *Application) GetProductPrice(gCtx *gin.Context) {
+	uuid, err := uuid.Parse(gCtx.Param("uuid"))
+	if err != nil {
+		gCtx.JSON(
+			http.StatusBadRequest,
+			&models.ModelError{
+				Description: "Invalid UUID format",
+				Error:       models.Err400,
+				Type:        models.TypeClientReq,
+			})
+		return
+	}
+	resp, err := a.repo.GetProductPrice(uuid)
+	if err != nil {
+		if resp == 404 {
+			gCtx.JSON(
+				http.StatusNotFound,
+				&models.ModelError{
+					Description: "UUID Not Found",
+					Error:       models.Err404,
+					Type:        models.TypeClientReq,
+				})
+			return
+		} else {
+			gCtx.JSON(
+				http.StatusInternalServerError,
+				&models.ModelError{
+					Description: "Get car price failed",
+					Error:       models.Err500,
+					Type:        models.TypeInternalReq,
+				})
+			return
+		}
+	}
+	gCtx.JSON(
+		http.StatusOK,
+		&models.ModelProductPrice{
+			Price: resp,
+		})
+
 }

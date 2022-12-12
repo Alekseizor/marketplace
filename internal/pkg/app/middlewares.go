@@ -5,9 +5,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
+	uuid2 "github.com/google/uuid"
 	"log"
 	"marketplace/internal/app/ds"
 	"marketplace/internal/app/role"
+	"marketplace/swagger/models"
 	"net/http"
 	"strings"
 )
@@ -62,5 +64,66 @@ func (a *Application) WithAuthCheck(assignedRoles ...role.Role) func(ctx *gin.Co
 		return
 
 	}
+
+}
+
+func (a *Application) GetUserByToken(jwtStr string) (userUUID uuid2.UUID) {
+	if !strings.HasPrefix(jwtStr, jwtPrefix) { // если нет префикса то нас дурят!
+		return // завершаем обработку
+	}
+	// отрезаем префикс
+	jwtStr = jwtStr[len(jwtPrefix):]
+
+	token, err := jwt.ParseWithClaims(jwtStr, &ds.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(a.config.JWT.Token), nil
+	})
+	if err != nil {
+		log.Println(err)
+
+		return
+	}
+
+	myClaims := token.Claims.(*ds.JWTClaims)
+	log.Println(myClaims)
+
+	return myClaims.UserUUID
+}
+
+func (a *Application) GetRoleByToken(jwtStr string) (role role.Role) {
+	if !strings.HasPrefix(jwtStr, jwtPrefix) { // если нет префикса то нас дурят!
+		return // завершаем обработку
+	}
+	// отрезаем префикс
+	jwtStr = jwtStr[len(jwtPrefix):]
+
+	token, err := jwt.ParseWithClaims(jwtStr, &ds.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(a.config.JWT.Token), nil
+	})
+	if err != nil {
+		log.Println(err)
+
+		return
+	}
+
+	myClaims := token.Claims.(*ds.JWTClaims)
+	log.Println(myClaims)
+
+	return myClaims.Role
+}
+func (a *Application) GetUser(gCtx *gin.Context) {
+	UUID, err := uuid2.Parse(gCtx.Param("uuid"))
+	userName, err := a.repo.GetUserByUUID(UUID)
+	if err != nil {
+		gCtx.JSON(
+			http.StatusInternalServerError,
+			&models.ModelError{
+				Description: "Can't get a user",
+				Error:       models.Err500,
+				Type:        models.TypeInternalReq,
+			})
+		return
+	}
+
+	gCtx.JSON(http.StatusOK, userName)
 
 }
